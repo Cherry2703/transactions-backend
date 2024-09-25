@@ -31,6 +31,10 @@ const initializeDBAndServer = async () => {
 initializeDBAndServer();
 
 
+app.get('/',(request,response)=>{
+  response.send('todos data base backend .....')
+})
+
 app.post("/users/", async (request, response) => {
   const { username, email, password, location } = request.body;
   const hashedPassword = await bcrypt.hash(request.body.password, 10);
