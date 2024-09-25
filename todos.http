@@ -1,0 +1,48 @@
+###
+POST http://localhost:3015/users/
+Content-Type:application/json
+
+{
+    "username":"Ram Charan Teja",
+    "email":"ramcharan123@gmail.com",
+    "password":"ram123",
+    "location":"Hyderabad"
+}
+
+
+###
+POST http://localhost:3015/users/login
+Content-Type: application/json
+
+{
+    "username":"Ram Charan",
+    "password":"ram123"
+}
+
+
+###
+GET http://localhost:3015/todos/
+
+
+###
+POST http://localhost:3015/todos/
+Content-Type: application/json
+
+{
+    "todo_text":"learn jgf",
+    "todo_status":"incomplete"
+}
+
+
+###
+PUT http://localhost:3015/todos/abcde123
+Content-Type: application/json
+
+{
+    "todo_text":"Learn React",
+    "todo_status":"Completed..."
+}
+
+
+###
+DELETE http://localhost:3015/todos/abcde123
