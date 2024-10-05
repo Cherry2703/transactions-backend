@@ -1,292 +1,220 @@
-const express = require("express");
-const path = require("path");
-const { open } = require("sqlite");
-const sqlite3 = require("sqlite3");
-const { v4: uuidv4 } = require('uuid'); // Correctly import uuid
-const bcrypt = require('bcrypt');
-const cors = require('cors');
-const jwt = require('jsonwebtoken'); // Import JWT for token generation
-const app = express();
-const dbPath = path.join(__dirname, "./todos.db");
-let db = null;
 
-const PORT = process.env.PORT || 3015;
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 3004;
+const path = require('path');
+const { open } = require('sqlite');
+const sqlite3 = require('sqlite3');
+const dbPath = path.join(__dirname, "todos.db");
+const cors = require('cors');
+
 app.use(express.json());
 app.use(cors());
+
+let db = null;
+
+const { v4: uuidv4 } = require('uuid');
+const bcrypt = require('bcrypt');
+const jwt=require('jsonwebtoken')
+
 const initializeDBAndServer = async () => {
-  try {
-    db = await open({
-      filename: dbPath,
-      driver: sqlite3.Database,
-    });
-    app.listen(PORT, () => {
-      console.log("Server Running at http://localhost:3015/");
-    });
-  } catch (e) {
-    console.log(`DB Error: ${e.message}`);
-    process.exit(1);
-  }
+    try {
+        db = await open({
+            filename: dbPath,
+            driver: sqlite3.Database
+        });
+        app.listen(port, () => {
+            console.log(`Server is running at http://localhost:${port}/`);
+        });
+    } catch (error) {
+        console.log(`DB ERROR: ${error.message}`);
+        process.exit(1);
+    }
 };
 
 initializeDBAndServer();
 
+// Check if the server is running
+app.get("/", (request, response) => {
+    response.send('Todos backend testing is working... go for different routes');
+});
 
-app.get('/',(request,response)=>{
-  response.send(`todos backend database
-    
-    
-    This is a backend API built using Express.js, SQLite, and JSON Web Tokens (JWT). It supports user registration, login, and a basic todo management system, including adding, updating, and deleting tasks.
-
-Features
-
-
-User Registration
-User Login (JWT-based authentication)
-Todo CRUD (Create, Read, Update, Delete) operations
-Tech Stack
-Node.js (Express.js)
-SQLite (Database)
-JWT (Authentication)
-UUID (For generating unique IDs)
-Bcrypt (For password hashing)
-
-
-
-Create the SQLite database:
-
-Ensure you have SQLite3 installed.
-Create a todos.db file if it doesn't exist. Use the following schema for the database:
-
-CREATE TABLE users (
-  user_id TEXT PRIMARY KEY,
-  username TEXT UNIQUE NOT NULL,
-  email TEXT NOT NULL,
-  password TEXT NOT NULL,
-  location TEXT,
-  created_at TEXT
-);
-
-CREATE TABLE todo (
-  todo_id TEXT PRIMARY KEY,
-  todo_text TEXT NOT NULL,
-  todo_status TEXT NOT NULL,
-  created_at TEXT
-);
+// Endpoint for user registration
+app.post("/users/", async (request, response) => {
+    const { username, email, password } = request.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    try {
+        const dbUser = await db.get( `SELECT username FROM users WHERE username = '${username}';`);
+        if (dbUser) {
+            response.status(400).send({ message: "User already exists." });
+        } else {
+            const userId = uuidv4();
+            const currentDate=new Date().toLocaleString()
+            await db.run(`INSERT INTO users(user_id, username, email, password,created_at) VALUES('${userId}','${username}','${email}','${hashedPassword}','${currentDate}');`);
+            response.status(201).send({ message: "User created successfully." });
+        }
+    } catch (error) {
+        console.log(`DB Error: ${error.message}`);
+        response.status(500).send({ message: "Internal server error." });
+    }
+});
 
 
+// login this user 
 
-API Endpoints
-1. Register a New User
-Endpoint: POST /users/
-Description: Registers a new user with a unique username and hashed password.
-Example Input:
-json
-Copy code
-{
-  "username": "johndoe",
-  "email": "johndoe@example.com",
-  "password": "password123",
-  "location": "New York"
-}
-Response:
-json
-Copy code
-{
-  "response": "new use created"
-}
-2. Login a User
-Endpoint: POST /users/login/
-Description: Logs in a user and returns a JWT token if credentials are correct.
-Example Input:
-json
-Copy code
-{
-  "username": "johndoe",
-  "password": "password123"
-}
-Response:
-json
-Copy code
-{
-  "jwtToken": "your_jwt_token_here"
-}
-3. Get All Todos
-Endpoint: GET /todos/
-Description: Retrieves all todos from the database.
-Response:
-json
-Copy code
-[
-  {
-    "todo_id": "1",
-    "todo_text": "Complete assignment",
-    "todo_status": "pending",
-    "created_at": "2024-10-02T10:20:30Z"
-  },
-  {
-    "todo_id": "2",
-    "todo_text": "Buy groceries",
-    "todo_status": "completed",
-    "created_at": "2024-10-02T11:30:45Z"
-  }
-]
-4. Add a New Todo
-Endpoint: POST /todos/
-Description: Adds a new todo item.
-Example Input:
-json
-Copy code
-{
-  "todo_text": "Finish reading book",
-  "todo_status": "pending"
-}
-Response:
-arduino
-Copy code
-new todo added........
-5. Update a Todo
-Endpoint: PUT /todos/:todoId/
-Description: Updates a specific todo by its ID.
-Example Input:
-json
-Copy code
-{
-  "todo_text": "Finish reading book",
-  "todo_status": "completed"
-}
-Response:
-Copy code
-todo Updated Successfully
-6. Delete a Todo
-Endpoint: DELETE /todos/:todoId/
-Description: Deletes a specific todo by its ID.
-Response:
-Copy code
-todo Deleted Successfully
-License
-This project is open-source and free to use.
 
-`)
+app.post("/users/login/",async (request,response)=>{
+    const {username,password}=request.body
+    try {
+        const dbUser=`select * from users where username='${username}';`;
+        const checkingUserExists=await db.get(dbUser)
+        if(checkingUserExists===undefined){
+            response.status(401).send({message:'User Not Found...'})
+        }else{
+            const isValidPassword=await bcrypt.compare(password,checkingUserExists.password)
+            if(isValidPassword===true){
+                const payload={username:username}
+                const jwtToken=jwt.sign(payload,'my_secret_jwt_token')
+                response.status(200).send({jwtToken})
+            }else{
+                response.status(400).send("Invalid Password")
+            }
+        }
+    } catch (error) {
+        response.status(500).send({message:'Internal Server Error'})
+    }
 })
 
-app.post("/users/", async (request, response) => {
-  const { username, email, password, location } = request.body;
-  const hashedPassword = await bcrypt.hash(request.body.password, 10);
-  const currentDate = new Date().toISOString().split("T")[0]; // Format the date as YYYY-MM-DD
-    const id = uuidv4();
-  const selectUserQuery = `SELECT * FROM users WHERE username = '${username}'`;
-  const dbUser = await db.get(selectUserQuery);
-  if (dbUser === undefined) {
-    const createUserQuery = `
-      INSERT INTO 
-        users(user_id, username, email, password,location, created_at)  
-      VALUES 
-        (
-          '${id}', 
-          '${username}',
-          '${email}', 
-          '${hashedPassword}',
-          '${location}',
-          '${currentDate}'
-        )`;
-    const dbResponse = await db.run(createUserQuery);
-    response.send({"response":"new use created"});
-  } else {
-    response.status = 400;
-    response.send("User already exists");
-  }
-});
 
-// Logging in as a user
-app.post("/users/login/", async (request, response) => {
-  const { username, password } = request.body;
 
-  try {
-    // Parameterized query to avoid SQL injection
-    const selectUserQuery = `SELECT * FROM users WHERE username = ?`;
-    const dbUser = await db.get(selectUserQuery, [username]);
 
-    if (dbUser === undefined) {
-      // Send a generic error message to avoid revealing whether the username exists
-      response.status(400).send("Invalid credentials");
-    } else {
-      const isPasswordMatched = await bcrypt.compare(password, dbUser.password);
-      if (isPasswordMatched) {
-        const payload = { username: username };
-        const jwtToken = jwt.sign(payload, "jwtToken");
-        response.send({ jwtToken });
-      } else {
-        response.status(400).send("Invalid credentials");
-      }
+const middleWare=(request,response,next)=>{
+    let jwtToken;
+    const authHeader=request.headers['authorization']
+    if(authHeader){
+        jwtToken=authHeader.split(' ')[1]
     }
-  } catch (error) {
-    console.error(error.message);
-    response.status(500).send("Internal Server Error");
-  }
+    if(jwtToken){
+        jwt.verify(jwtToken,'my_secret_jwt_token',async (error,payload)=>{
+            if(error){
+                response.status(401).send({message:'Invalid Token'})
+            }else{
+                request.username=payload.username
+                next()
+            }
+        })
+    }else{
+        response.status(401).send({message:'Invalid Token'})
+    }
+}
+
+
+// to get all users present in data base
+
+app.get('/users/',middleWare,async(request,response)=>{
+    const query=`select * from users;`
+    const users=await db.all(query)
+    response.status(200).send(users)
+})
+
+
+
+
+// Get all todos for a user
+const getAllTodosForUser = async (user_id) => {
+    const query = `SELECT * FROM todos WHERE user_id = '${user_id}';`;
+    return await db.all(query);
+};
+
+// Create a new todo and return the updated list of todos
+app.post('/todos/', middleWare, async (request, response) => {
+    const userQuery = `SELECT * FROM users WHERE username = '${request.username}';`;
+    const user = await db.get(userQuery);
+
+    if (user) {
+        const { title, description } = request.body;
+        const currentUploadTime = new Date().toLocaleString();
+        const todo_id = uuidv4();
+        const insertTodoQuery = `
+            INSERT INTO todos (todo_id, user_id, title, description, created_at) 
+            VALUES ('${todo_id}', '${user.user_id}', '${title}', '${description}', '${currentUploadTime}');
+        `;
+        await db.run(insertTodoQuery);
+
+        const updatedTodos = await getAllTodosForUser(user.user_id);
+        response.status(200).send({
+            message: 'New todo added successfully.',
+            todos: updatedTodos
+        });
+    }
+});
+
+// Delete a todo and return the updated list of todos
+app.delete("/todos/:todoId/", middleWare, async (request, response) => {
+    const { todoId } = request.params;
+    const userQuery = `SELECT * FROM users WHERE username = '${request.username}';`;
+    const user = await db.get(userQuery);
+
+    if (user) {
+        const deleteTodoQuery = `DELETE FROM todos WHERE todo_id = '${todoId}' AND user_id = '${user.user_id}';`;
+        await db.run(deleteTodoQuery);
+
+        const updatedTodos = await getAllTodosForUser(user.user_id);
+        response.status(200).send({
+            message: 'Todo deleted successfully.',
+            todos: updatedTodos
+        });
+    }
+});
+
+// Update a todo and return the updated list of todos
+app.put('/todos/:todoId/', middleWare, async (request, response) => {
+    const userQuery = `SELECT * FROM users WHERE username = '${request.username}';`;
+    const user = await db.get(userQuery);
+
+    if (user) {
+        const { todoId } = request.params;
+        const { title, description } = request.body;
+        const todoQuery = `SELECT * FROM todos WHERE todo_id = '${todoId}' AND user_id = '${user.user_id}';`;
+        const existingTodo = await db.get(todoQuery);
+
+        if (existingTodo) {
+            const updatedTitle = title !== undefined ? title : existingTodo.title;
+            const updatedDescription = description !== undefined ? description : existingTodo.description;
+            const currentDate = new Date().toLocaleString();
+            const updateTodoQuery = `
+                UPDATE todos 
+                SET title = '${updatedTitle}', description = '${updatedDescription}', created_at = '${currentDate}'
+                WHERE todo_id = '${todoId}' AND user_id = '${user.user_id}';
+            `;
+            await db.run(updateTodoQuery);
+
+            const updatedTodos = await getAllTodosForUser(user.user_id);
+            response.status(200).send({
+                message: 'Todo updated successfully.',
+                todos: updatedTodos
+            });
+        } else {
+            response.status(404).send({ message: 'Todo not found.' });
+        }
+    } else {
+        response.status(401).send({ message: 'Unauthorized user.' });
+    }
+});
+
+// Get all todos for the logged-in user
+app.get('/todos/', middleWare, async (request, response) => {
+    const userQuery = `SELECT * FROM users WHERE username = '${request.username}';`;
+    const user = await db.get(userQuery);
+
+    if (user) {
+        const todos = await getAllTodosForUser(user.user_id);
+        response.status(200).send({todos});
+    } else {
+        response.status(401).send({ message: 'Unauthorized user.' });
+    }
 });
 
 
-  app.get("/todos/", async (request, response) => {
-    const getBooksQuery = `
-      SELECT
-        *
-      FROM
-        todo
-      ORDER BY
-        todo_id;`;
-    const booksArray = await db.all(getBooksQuery);
-    response.send(booksArray);
-  });
 
-// adding new todo 
 
-app.post("/todos/", async (request, response) => {
-  const {todo_text,todo_status} = request.body;
-  const currentDate=new Date()
-  const newId=uuidv4()
-  const addBookQuery = `
-    INSERT INTO
-      todo(todo_id,todo_text,todo_status,created_at)
-    VALUES
-      (
-        '${newId}',
-         '${todo_text}',
-         '${todo_status}',
-         '${currentDate}'
-      );`;
-
-  await db.run(addBookQuery);
-  response.send('new todo added........')
-});
-
-//updating todo
-
-app.put("/todos/:todoId/", async (request, response) => {
-  const { todoId } = request.params;
-  const todoDetails = request.body;
-  const {
-    todo_text,todo_status
-  } = todoDetails;
-  const updatetodoQuery = `
-    UPDATE
-      todo
-    SET
-      todo_text='${todo_text}',
-      todo_status='${todo_status}'
-    WHERE todo_id = '${todoId}';`;
-  await db.run(updatetodoQuery);
-  response.send("todo Updated Successfully");
-});
-
-// delete  todo 
-
-app.delete("/todos/:todoId/", async (request, response) => {
-  const { todoId } = request.params;
-  const deletetodoQuery = `
-    DELETE FROM
-      todo
-    WHERE
-      todo_id = '${todoId}';`;
-  await db.run(deletetodoQuery);
-  response.send("todo Deleted Successfully");
-});
