@@ -5,7 +5,7 @@ const port = process.env.PORT || 3004;
 const path = require('path');
 const { open } = require('sqlite');
 const sqlite3 = require('sqlite3');
-const dbPath = path.join(__dirname, "todos.db");
+const dbPath = path.join(__dirname, "database.db");
 const cors = require('cors');
 
 app.use(express.json());
