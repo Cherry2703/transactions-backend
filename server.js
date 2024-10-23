@@ -1,221 +1,4 @@
 
-// const express = require('express');
-// const app = express();
-// const port = process.env.PORT || 3004;
-// const path = require('path');
-// const { open } = require('sqlite');
-// const sqlite3 = require('sqlite3');
-// const dbPath = path.join(__dirname, "database.db");
-// const cors = require('cors');
-
-// app.use(express.json());
-// app.use(cors());
-
-// let db = null;
-
-// const { v4: uuidv4 } = require('uuid');
-// const bcrypt = require('bcrypt');
-// const jwt=require('jsonwebtoken')
-
-// const initializeDBAndServer = async () => {
-//     try {
-//         db = await open({
-//             filename: dbPath,
-//             driver: sqlite3.Database
-//         });
-//         app.listen(port, () => {
-//             console.log(`Server is running at http://localhost:${port}/`);
-//         });
-//     } catch (error) {
-//         console.log(`DB ERROR: ${error.message}`);
-//         process.exit(1);
-//     }
-// };
-
-// initializeDBAndServer();
-
-// // Check if the server is running
-// app.get("/", (request, response) => {
-//     response.send('Todos backend testing is working... go for different routes');
-// });
-
-// // Endpoint for user registration
-// app.post("/users/", async (request, response) => {
-//     const { username, email, password } = request.body;
-//     const hashedPassword = await bcrypt.hash(password, 10);
-//     try {
-//         const dbUser = await db.get( `SELECT username FROM users WHERE username = '${username}';`);
-//         if (dbUser) {
-//             response.status(400).send({ message: "User already exists." });
-//         } else {
-//             const userId = uuidv4();
-//             const currentDate=new Date().toLocaleString()
-//             await db.run(`INSERT INTO users(user_id, username, email, password,created_at) VALUES('${userId}','${username}','${email}','${hashedPassword}','${currentDate}');`);
-//             response.status(201).send({ message: "User created successfully." });
-//         }
-//     } catch (error) {
-//         console.log(`DB Error: ${error.message}`);
-//         response.status(500).send({ message: "Internal server error." });
-//     }
-// });
-
-
-// // login this user 
-
-
-// app.post("/users/login/",async (request,response)=>{
-//     const {username,password}=request.body
-//     try {
-//         const dbUser=`select * from users where username='${username}';`;
-//         const checkingUserExists=await db.get(dbUser)
-//         if(checkingUserExists===undefined){
-//             response.status(401).send({message:'User Not Found...'})
-//         }else{
-//             const isValidPassword=await bcrypt.compare(password,checkingUserExists.password)
-//             if(isValidPassword===true){
-//                 const payload={username:username}
-//                 const jwtToken=jwt.sign(payload,'my_secret_jwt_token')
-//                 response.status(200).send({jwtToken})
-//             }else{
-//                 response.status(400).send("Invalid Password")
-//             }
-//         }
-//     } catch (error) {
-//         response.status(500).send({message:'Internal Server Error'})
-//     }
-// })
-
-
-
-
-// const middleWare=(request,response,next)=>{
-//     let jwtToken;
-//     const authHeader=request.headers['authorization']
-//     if(authHeader){
-//         jwtToken=authHeader.split(' ')[1]
-//     }
-//     if(jwtToken){
-//         jwt.verify(jwtToken,'my_secret_jwt_token',async (error,payload)=>{
-//             if(error){
-//                 response.status(401).send({message:'Invalid Token'})
-//             }else{
-//                 request.username=payload.username
-//                 next()
-//             }
-//         })
-//     }else{
-//         response.status(401).send({message:'Invalid Token'})
-//     }
-// }
-
-
-// // to get all users present in data base
-
-// app.get('/users/',middleWare,async(request,response)=>{
-//     const query=`select * from users;`
-//     const users=await db.all(query)
-//     response.status(200).send(users)
-// })
-
-
-
-
-// // Get all todos for a user
-// const getAllTodosForUser = async (user_id) => {
-//     const query = `SELECT * FROM todos WHERE user_id = '${user_id}';`;
-//     return await db.all(query);
-// };
-
-// // Create a new todo and return the updated list of todos
-// app.post('/todos/', middleWare, async (request, response) => {
-//     const userQuery = `SELECT * FROM users WHERE username = '${request.username}';`;
-//     const user = await db.get(userQuery);
-
-//     if (user) {
-//         const { title, description } = request.body;
-//         const currentUploadTime = new Date().toLocaleString();
-//         const todo_id = uuidv4();
-//         const insertTodoQuery = `
-//             INSERT INTO todos (todo_id, user_id, title, description, created_at) 
-//             VALUES ('${todo_id}', '${user.user_id}', '${title}', '${description}', '${currentUploadTime}');
-//         `;
-//         await db.run(insertTodoQuery);
-
-//         const updatedTodos = await getAllTodosForUser(user.user_id);
-//         response.status(200).send({
-//             message: 'New todo added successfully.',
-//             todos: updatedTodos
-//         });
-//     }
-// });
-
-// // Delete a todo and return the updated list of todos
-// app.delete("/todos/:todoId/", middleWare, async (request, response) => {
-//     const { todoId } = request.params;
-//     const userQuery = `SELECT * FROM users WHERE username = '${request.username}';`;
-//     const user = await db.get(userQuery);
-
-//     if (user) {
-//         const deleteTodoQuery = `DELETE FROM todos WHERE todo_id = '${todoId}' AND user_id = '${user.user_id}';`;
-//         await db.run(deleteTodoQuery);
-
-//         const updatedTodos = await getAllTodosForUser(user.user_id);
-//         response.status(200).send({
-//             message: 'Todo deleted successfully.',
-//             todos: updatedTodos
-//         });
-//     }
-// });
-
-// // Update a todo and return the updated list of todos
-// app.put('/todos/:todoId/', middleWare, async (request, response) => {
-//     const userQuery = `SELECT * FROM users WHERE username = '${request.username}';`;
-//     const user = await db.get(userQuery);
-
-//     if (user) {
-//         const { todoId } = request.params;
-//         const { title, description } = request.body;
-//         const todoQuery = `SELECT * FROM todos WHERE todo_id = '${todoId}' AND user_id = '${user.user_id}';`;
-//         const existingTodo = await db.get(todoQuery);
-
-//         if (existingTodo) {
-//             const updatedTitle = title !== undefined ? title : existingTodo.title;
-//             const updatedDescription = description !== undefined ? description : existingTodo.description;
-//             const currentDate = new Date().toLocaleString();
-//             const updateTodoQuery = `
-//                 UPDATE todos 
-//                 SET title = '${updatedTitle}', description = '${updatedDescription}', created_at = '${currentDate}'
-//                 WHERE todo_id = '${todoId}' AND user_id = '${user.user_id}';
-//             `;
-//             await db.run(updateTodoQuery);
-
-//             const updatedTodos = await getAllTodosForUser(user.user_id);
-//             response.status(200).send({
-//                 message: 'Todo updated successfully.',
-//                 todos: updatedTodos
-//             });
-//         } else {
-//             response.status(404).send({ message: 'Todo not found.' });
-//         }
-//     } else {
-//         response.status(401).send({ message: 'Unauthorized user.' });
-//     }
-// });
-
-// // Get all todos for the logged-in user
-// app.get('/todos/', middleWare, async (request, response) => {
-//     const userQuery = `SELECT * FROM users WHERE username = '${request.username}';`;
-//     const user = await db.get(userQuery);
-
-//     if (user) {
-//         const todos = await getAllTodosForUser(user.user_id);
-//         response.status(200).send({todos});
-//     } else {
-//         response.status(401).send({ message: 'Unauthorized user.' });
-//     }
-// });
-
-
 
 const express = require('express');
 const app = express();
@@ -465,37 +248,98 @@ app.put("/transactions/:id/", middleWare, async (request, response) => {
 
 // summary route for all the income and expenses calculation
 
+// app.get('/summary', middleWare, async (request, response) => {
+//     try {
+//         const { username } = request;
+//         const queryCheck = `SELECT * FROM users WHERE username = '${username}';`;
+//         const userData = await db.get(queryCheck);
+//         if (!userData) {
+//             return response.status(404).send({ error: 'User not found' });
+//         }
+//         const { start_date, end_date, category } = request.body;
+//         let incomeQuery = `SELECT SUM(amount) as total_income FROM transactions WHERE type = 'income' AND user_id = '${userData.user_id}'`;
+//         let expenseQuery = `SELECT SUM(amount) as total_expenses FROM transactions WHERE type = 'expense' AND user_id = '${userData.user_id}'`;
+//         if (start_date && end_date) {
+//             incomeQuery += ` AND date BETWEEN '${start_date}' AND '${end_date}'`;
+//             expenseQuery += ` AND date BETWEEN '${start_date}' AND '${end_date}'`;
+//         }
+//         if (category) {
+//             const categoryQuery = `SELECT category_id FROM categories WHERE name = '${category}'`;
+//             const categoryResult = await db.get(categoryQuery);
+
+//             if (categoryResult) {
+//                 incomeQuery += ` AND category_id = '${categoryResult.category_id}'`;
+//                 expenseQuery += ` AND category_id = '${categoryResult.category_id}'`;
+//             }
+//         }
+//         const incomeResult = await db.get(incomeQuery);
+//         const expenseResult = await db.get(expenseQuery);
+
+//         // Calculating total income, total expenses, and balance
+//         const totalIncome = incomeResult?.total_income || 0;
+//         const totalExpenses = expenseResult?.total_expenses || 0;
+//         const balance = totalIncome - totalExpenses;
+//         response.status(200).send({
+//             total_income: totalIncome,
+//             total_expenses: totalExpenses,
+//             balance: balance,
+//         });
+
+//     } catch (error) {
+//         console.error('Error while fetching summary:', error);
+//         response.status(500).json({ error: 'Internal Server Error' });
+//     }
+// });
+
+
 app.get('/summary', middleWare, async (request, response) => {
     try {
         const { username } = request;
-        const queryCheck = `SELECT * FROM users WHERE username = '${username}';`;
-        const userData = await db.get(queryCheck);
+        
+        // Get user data securely using a parameterized query
+        const userQuery = `SELECT * FROM users WHERE username = ?`;
+        const userData = await db.get(userQuery, [username]);
         if (!userData) {
             return response.status(404).send({ error: 'User not found' });
         }
+
         const { start_date, end_date, category } = request.body;
-        let incomeQuery = `SELECT SUM(amount) as total_income FROM transactions WHERE type = 'income' AND user_id = '${userData.user_id}'`;
-        let expenseQuery = `SELECT SUM(amount) as total_expenses FROM transactions WHERE type = 'expense' AND user_id = '${userData.user_id}'`;
+
+        // Base queries for income and expenses
+        let incomeQuery = `SELECT SUM(amount) AS total_income FROM transactions WHERE type = 'income' AND user_id = ?`;
+        let expenseQuery = `SELECT SUM(amount) AS total_expenses FROM transactions WHERE type = 'expense' AND user_id = ?`;
+
+        const queryParams = [userData.user_id];
+
+        // Apply date filters if provided
         if (start_date && end_date) {
-            incomeQuery += ` AND date BETWEEN '${start_date}' AND '${end_date}'`;
-            expenseQuery += ` AND date BETWEEN '${start_date}' AND '${end_date}'`;
+            incomeQuery += ` AND date BETWEEN ? AND ?`;
+            expenseQuery += ` AND date BETWEEN ? AND ?`;
+            queryParams.push(start_date, end_date);
         }
+
+        // Apply category filter if provided
         if (category) {
-            const categoryQuery = `SELECT category_id FROM categories WHERE name = '${category}'`;
-            const categoryResult = await db.get(categoryQuery);
+            const categoryQuery = `SELECT category_id FROM categories WHERE name = ?`;
+            const categoryResult = await db.get(categoryQuery, [category]);
 
             if (categoryResult) {
-                incomeQuery += ` AND category_id = '${categoryResult.category_id}'`;
-                expenseQuery += ` AND category_id = '${categoryResult.category_id}'`;
+                incomeQuery += ` AND category_id = ?`;
+                expenseQuery += ` AND category_id = ?`;
+                queryParams.push(categoryResult.category_id, categoryResult.category_id);
             }
         }
-        const incomeResult = await db.get(incomeQuery);
-        const expenseResult = await db.get(expenseQuery);
 
-        // Calculating total income, total expenses, and balance
+        // Execute income and expense queries
+        const incomeResult = await db.get(incomeQuery, queryParams);
+        const expenseResult = await db.get(expenseQuery, queryParams);
+
+        // Calculate totals
         const totalIncome = incomeResult?.total_income || 0;
         const totalExpenses = expenseResult?.total_expenses || 0;
         const balance = totalIncome - totalExpenses;
+
+        // Send response
         response.status(200).send({
             total_income: totalIncome,
             total_expenses: totalExpenses,
@@ -507,6 +351,7 @@ app.get('/summary', middleWare, async (request, response) => {
         response.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
 
 
 
