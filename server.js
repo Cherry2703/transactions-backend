@@ -248,98 +248,37 @@ app.put("/transactions/:id/", middleWare, async (request, response) => {
 
 // summary route for all the income and expenses calculation
 
-// app.get('/summary', middleWare, async (request, response) => {
-//     try {
-//         const { username } = request;
-//         const queryCheck = `SELECT * FROM users WHERE username = '${username}';`;
-//         const userData = await db.get(queryCheck);
-//         if (!userData) {
-//             return response.status(404).send({ error: 'User not found' });
-//         }
-//         const { start_date, end_date, category } = request.body;
-//         let incomeQuery = `SELECT SUM(amount) as total_income FROM transactions WHERE type = 'income' AND user_id = '${userData.user_id}'`;
-//         let expenseQuery = `SELECT SUM(amount) as total_expenses FROM transactions WHERE type = 'expense' AND user_id = '${userData.user_id}'`;
-//         if (start_date && end_date) {
-//             incomeQuery += ` AND date BETWEEN '${start_date}' AND '${end_date}'`;
-//             expenseQuery += ` AND date BETWEEN '${start_date}' AND '${end_date}'`;
-//         }
-//         if (category) {
-//             const categoryQuery = `SELECT category_id FROM categories WHERE name = '${category}'`;
-//             const categoryResult = await db.get(categoryQuery);
-
-//             if (categoryResult) {
-//                 incomeQuery += ` AND category_id = '${categoryResult.category_id}'`;
-//                 expenseQuery += ` AND category_id = '${categoryResult.category_id}'`;
-//             }
-//         }
-//         const incomeResult = await db.get(incomeQuery);
-//         const expenseResult = await db.get(expenseQuery);
-
-//         // Calculating total income, total expenses, and balance
-//         const totalIncome = incomeResult?.total_income || 0;
-//         const totalExpenses = expenseResult?.total_expenses || 0;
-//         const balance = totalIncome - totalExpenses;
-//         response.status(200).send({
-//             total_income: totalIncome,
-//             total_expenses: totalExpenses,
-//             balance: balance,
-//         });
-
-//     } catch (error) {
-//         console.error('Error while fetching summary:', error);
-//         response.status(500).json({ error: 'Internal Server Error' });
-//     }
-// });
-
-
 app.get('/summary', middleWare, async (request, response) => {
     try {
         const { username } = request;
-        
-        // Get user data securely using a parameterized query
-        const userQuery = `SELECT * FROM users WHERE username = ?`;
-        const userData = await db.get(userQuery, [username]);
+        const queryCheck = `SELECT * FROM users WHERE username = '${username}';`;
+        const userData = await db.get(queryCheck);
         if (!userData) {
             return response.status(404).send({ error: 'User not found' });
         }
-
         const { start_date, end_date, category } = request.body;
-
-        // Base queries for income and expenses
-        let incomeQuery = `SELECT SUM(amount) AS total_income FROM transactions WHERE type = 'income' AND user_id = ?`;
-        let expenseQuery = `SELECT SUM(amount) AS total_expenses FROM transactions WHERE type = 'expense' AND user_id = ?`;
-
-        const queryParams = [userData.user_id];
-
-        // Apply date filters if provided
+        let incomeQuery = `SELECT SUM(amount) as total_income FROM transactions WHERE type = 'income' AND user_id = '${userData.user_id}'`;
+        let expenseQuery = `SELECT SUM(amount) as total_expenses FROM transactions WHERE type = 'expense' AND user_id = '${userData.user_id}'`;
         if (start_date && end_date) {
-            incomeQuery += ` AND date BETWEEN ? AND ?`;
-            expenseQuery += ` AND date BETWEEN ? AND ?`;
-            queryParams.push(start_date, end_date);
+            incomeQuery += ` AND date BETWEEN '${start_date}' AND '${end_date}'`;
+            expenseQuery += ` AND date BETWEEN '${start_date}' AND '${end_date}'`;
         }
-
-        // Apply category filter if provided
         if (category) {
-            const categoryQuery = `SELECT category_id FROM categories WHERE name = ?`;
-            const categoryResult = await db.get(categoryQuery, [category]);
+            const categoryQuery = `SELECT category_id FROM categories WHERE name = '${category}'`;
+            const categoryResult = await db.get(categoryQuery);
 
             if (categoryResult) {
-                incomeQuery += ` AND category_id = ?`;
-                expenseQuery += ` AND category_id = ?`;
-                queryParams.push(categoryResult.category_id, categoryResult.category_id);
+                incomeQuery += ` AND category_id = '${categoryResult.category_id}'`;
+                expenseQuery += ` AND category_id = '${categoryResult.category_id}'`;
             }
         }
+        const incomeResult = await db.get(incomeQuery);
+        const expenseResult = await db.get(expenseQuery);
 
-        // Execute income and expense queries
-        const incomeResult = await db.get(incomeQuery, queryParams);
-        const expenseResult = await db.get(expenseQuery, queryParams);
-
-        // Calculate totals
+        // Calculating total income, total expenses, and balance
         const totalIncome = incomeResult?.total_income || 0;
         const totalExpenses = expenseResult?.total_expenses || 0;
         const balance = totalIncome - totalExpenses;
-
-        // Send response
         response.status(200).send({
             total_income: totalIncome,
             total_expenses: totalExpenses,
@@ -351,6 +290,67 @@ app.get('/summary', middleWare, async (request, response) => {
         response.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
+
+// app.get('/summary', middleWare, async (request, response) => {
+//     try {
+//         const { username } = request;
+        
+//         // Get user data securely using a parameterized query
+//         const userQuery = `SELECT * FROM users WHERE username = '${username}';`;
+//         const userData = await db.get(userQuery);
+//         if (!userData) {
+//             return response.status(404).send({ error: 'User not found' });
+//         }
+
+//         const { start_date, end_date, category } = request.body;
+
+//         // Base queries for income and expenses
+//         let incomeQuery = `SELECT SUM(amount) AS total_income FROM transactions WHERE type = 'income' AND user_id = '${userData.user_id}'`;
+//         let expenseQuery = `SELECT SUM(amount) AS total_expenses FROM transactions WHERE type = 'expense' AND user_id = '${userData.user_id}'`;
+
+        
+
+//         // Apply date filters if provided
+//         if (start_date && end_date) {
+//             incomeQuery += ` AND date BETWEEN ? AND ?`;
+//             expenseQuery += ` AND date BETWEEN ? AND ?`;
+//             queryParams.push(start_date, end_date);
+//         }
+
+//         // Apply category filter if provided
+//         if (category) {
+//             const categoryQuery = `SELECT category_id FROM categories WHERE name = ?`;
+//             const categoryResult = await db.get(categoryQuery, [category]);
+
+//             if (categoryResult) {
+//                 incomeQuery += ` AND category_id = ?`;
+//                 expenseQuery += ` AND category_id = ?`;
+//                 queryParams.push(categoryResult.category_id, categoryResult.category_id);
+//             }
+//         }
+
+//         // Execute income and expense queries
+//         const incomeResult = await db.get(incomeQuery, queryParams);
+//         const expenseResult = await db.get(expenseQuery, queryParams);
+
+//         // Calculate totals
+//         const totalIncome = incomeResult?.total_income || 0;
+//         const totalExpenses = expenseResult?.total_expenses || 0;
+//         const balance = totalIncome - totalExpenses;
+
+//         // Send response
+//         response.status(200).send({
+//             total_income: totalIncome,
+//             total_expenses: totalExpenses,
+//             balance: balance,
+//         });
+
+//     } catch (error) {
+//         console.error('Error while fetching summary:', error);
+//         response.status(500).json({ error: 'Internal Server Error' });
+//     }
+// });
 
 
 
