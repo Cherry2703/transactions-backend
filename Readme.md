@@ -1,136 +1,200 @@
-This is a backend API built using Express.js, SQLite, and JSON Web Tokens (JWT). It supports user registration, login, and a basic todo management system, including adding, updating, and deleting tasks.
-
-Features
-User Registration
-User Login (JWT-based authentication)
-Todo CRUD (Create, Read, Update, Delete) operations
-Tech Stack
-Node.js (Express.js)
-SQLite (Database)
-JWT (Authentication)
-UUID (For generating unique IDs)
-Bcrypt (For password hashing)
+Expense Tracker API
+This is a Node.js Express-based API for managing users, transactions (both income and expense), and generating summaries of financial activity. The backend utilizes SQLite3 as the database and provides endpoints for user registration, login, transaction management, and generating income/expense summaries.
 
 
 
+### API END-POINTS
 
 
-Create the SQLite database:
+## GET "/"
 
-Ensure you have SQLite3 installed.
-Create a todos.db file if it doesn't exist. Use the following schema for the database:
-
-CREATE TABLE users (
-  user_id TEXT PRIMARY KEY,
-  username TEXT UNIQUE NOT NULL,
-  email TEXT NOT NULL,
-  password TEXT NOT NULL,
-  location TEXT,
-  created_at TEXT
-);
-
-CREATE TABLE todo (
-  todo_id TEXT PRIMARY KEY,
-  todo_text TEXT NOT NULL,
-  todo_status TEXT NOT NULL,
-  created_at TEXT
-);
-
-
-
-API Endpoints
-1. Register a New User
-Endpoint: POST /users/
-Description: Registers a new user with a unique username and hashed password.
-Example Input:
-json
-Copy code
+-Returns a Welcome message
 {
-  "username": "johndoe",
-  "email": "johndoe@example.com",
-  "password": "password123",
+  "message": "Todos backend testing is working... go for different routes"
 }
-Response:
-json
-Copy code
+
+## NEW-USER-REGISRATION   
+
+POST "/sign-up/"
+-Request JSON
 {
-  "response": "new use created"
-}
-2. Login a User
-Endpoint: POST /users/login/
-Description: Logs in a user and returns a JWT token if credentials are correct.
-Example Input:
-json
-Copy code
-{
-  "username": "johndoe",
+  "username": "john_doe",
+  "email": "john@example.com",
   "password": "password123"
 }
-Response:
-json
-Copy code
+
+-- RESPONSE JSON
 {
-  "jwtToken": "your_jwt_token_here"
+  "message": "User created successfully."
 }
-3. Get All Todos
-Endpoint: GET /todos/
-Description: Retrieves all todos from the database.
-Response:
+
+
+## USER-LOGIN
+POST "/login/"
+-REQUEST JSON
+{
+  "username": "john_doe",
+  "password": "password123"
+}
+
+-RESPONSE
+{
+  "jwtToken": "<JWT_TOKEN>"
+}
+
+
+## 4. Get All Users (Protected Route)
+GET /users/
+
+Requires JWT Authentication
+
+Response (200):
+
 json
-Copy code
+
 [
   {
-    "todo_id": "1",
-    "todo_text": "Complete assignment",
-    "todo_status": "pending",
-    "created_at": "2024-10-02T10:20:30Z"
+    "user_id": "user1-id",
+    "username": "john_doe",
+    "email": "john@example.com",
+    "created_at": "2024-10-22 14:30:00"
   },
   {
-    "todo_id": "2",
-    "todo_text": "Buy groceries",
-    "todo_status": "completed",
-    "created_at": "2024-10-02T11:30:45Z"
+    "user_id": "user2-id",
+    "username": "jane_doe",
+    "email": "jane@example.com",
+    "created_at": "2024-10-22 14:35:00"
   }
 ]
-4. Add a New Todo
-Endpoint: POST /todos/
-Description: Adds a new todo item.
-Example Input:
+## 5. Add Transaction (Protected Route)
+POST /transactions/
+
+Requires JWT Authentication
+
+Request:
+
+json
+
+{
+  "amount": 500,
+  "description": "Salary",
+  "type": "income",
+  "category": "Job"
+}
+Response (201):
+
 json
 Copy code
 {
-  "todo_text": "Finish reading book",
-  "todo_status": "pending"
+  "message": "Transaction Added Successfully"
 }
-Response:
-arduino
-Copy code
-new todo added........
-5. Update a Todo
-Endpoint: PUT /todos/:todoId/
-Description: Updates a specific todo by its ID.
-Example Input:
+## 6. Get All Transactions (Protected Route)
+GET /transactions/
+
+Requires JWT Authentication
+
+Response (200):
+
 json
-Copy code
-{
-  "todo_text": "Finish reading book",
-  "todo_status": "completed"
-}
+[
+  {
+    "transaction_id": "tran-1",
+    "user_id": "user1-id",
+    "type": "income",
+    "category": "Job",
+    "amount": 500,
+    "date": "2024-10-22 10:00:00",
+    "description": "Salary"
+  },
+  {
+    "transaction_id": "tran-2",
+    "user_id": "user1-id",
+    "type": "expense",
+    "category": "Food",
+    "amount": 100,
+    "date": "2024-10-22 12:00:00",
+    "description": "Lunch"
+  }
+]
+## 7. Get Specific Transaction (Protected Route)
+GET /transactions/:id/
+
+Requires JWT Authentication
+
 Response:
-Copy code
-todo Updated Successfully
-6. Delete a Todo
-Endpoint: DELETE /todos/:todoId/
-Description: Deletes a specific todo by its ID.
-Response:
-Copy code
-todo Deleted Successfully
-License
-This project is open-source and free to use.
 
+json
+{
+  "transaction_id": "tran-1",
+  "user_id": "user1-id",
+  "type": "income",
+  "category": "Job",
+  "amount": 500,
+  "date": "2024-10-22 10:00:00",
+  "description": "Salary"
+}
+## 8. Delete Specific Transaction (Protected Route)
+DELETE /transactions/:id/
 
+Requires JWT Authentication
+
+Response (200):
+
+json
 
 {
-    "username":"Balne Ram Charan",
-    "password":"Ram@7569943648"
+  "message": "Transaction deleted successfully"
 }
+## 9. Update Specific Transaction (Protected Route)
+PUT /transactions/:id/
+
+Requires JWT Authentication
+
+Request:
+
+json
+
+{
+  "amount": 600,
+  "description": "Updated Salary",
+  "type": "income",
+  "category": "Job"
+}
+Response (200):
+
+json
+
+{
+  "message": "Transaction updated successfully"
+}
+## 10. Get Summary (Protected Route)
+GET /summary
+
+Requires JWT Authentication
+
+Request:
+
+json
+
+{
+  "start_date": "2024-10-01",
+  "end_date": "2024-10-22",
+  "category": "Job"
+}
+Response (200):
+
+json
+{
+  "total_income": 1500,
+  "total_expenses": 500,
+  "balance": 1000
+}
+JWT Authentication
+Most routes require JWT authentication. Include the Authorization header in requests:
+
+Authorization: Bearer <jwtToken>
+
+
+## Error Handling
+The API will return a 500 status code for any internal server errors. If specific errors occur (e.g., invalid data), the API will return appropriate error messages with 400 or 401 status codes.
+
