@@ -49,7 +49,6 @@ Copy code
   "username": "johndoe",
   "email": "johndoe@example.com",
   "password": "password123",
-  "location": "New York"
 }
 Response:
 json
@@ -129,3 +128,9 @@ todo Deleted Successfully
 License
 This project is open-source and free to use.
 
+
+
+{
+    "username":"Balne Ram Charan",
+    "password":"Ram@7569943648"
+}
